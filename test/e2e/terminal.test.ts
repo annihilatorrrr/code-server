@@ -5,7 +5,7 @@ import util from "util"
 import { clean, getMaybeProxiedCodeServer, tmpdir } from "../utils/helpers"
 import { describe, expect, test } from "./baseFixture"
 
-describe("Integrated Terminal", [], {}, () => {
+describe("Integrated Terminal", ["--disable-workspace-trust"], {}, () => {
   const testName = "integrated-terminal"
   test.beforeAll(async () => {
     await clean(testName)
@@ -30,17 +30,24 @@ describe("Integrated Terminal", [], {}, () => {
     expect(stdout).toMatch(address)
   })
 
+  // TODO@jsjoeio - add test to make sure full code-server path works
   test("should be able to invoke `code-server` to open a file", async ({ codeServerPage }) => {
     const tmpFolderPath = await tmpdir(testName)
     const tmpFile = path.join(tmpFolderPath, "test-file")
     await fs.writeFile(tmpFile, "test")
-    const fileName = path.basename(tmpFile)
 
     await codeServerPage.focusTerminal()
 
     await codeServerPage.page.keyboard.type(`code-server ${tmpFile}`)
     await codeServerPage.page.keyboard.press("Enter")
 
-    await codeServerPage.waitForTab(fileName)
+    await codeServerPage.waitForTab(path.basename(tmpFile))
+
+    const externalTmpFile = path.join(tmpFolderPath, "test-external-file")
+    await fs.writeFile(externalTmpFile, "foobar")
+
+    await codeServerPage.openFileExternally(externalTmpFile)
+
+    await codeServerPage.waitForTab(path.basename(externalTmpFile))
   })
 })
